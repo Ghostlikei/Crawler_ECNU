@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://cdn.staticfile.org/echarts/4.3.0/echarts.min.js"></script>
+    <title>Science & Academic News</title>
+    <link rel="stylesheet" href="./stylesheets/style.css">
+    
+</head>
+<body>
+    <div class="title">
+        <h2>Science & Academic News</h2>
+    </div>
+    <div class="searchContainer">
+        
+        <form role="form">
+            <div class="form-group">
+                <br>Keyword:<br>
+                <input type="text" class="form-control" id="keyword" placeholder="请输入关键字">
+                <select class="form-select" aria-label="Default select example">
+                    <option selected>Select Item</option>
+                    <option value="author">作者</option>
+                    <option value="title">标题</option>
+                    <option value="article">正文</option>
+                    <option value="source">来源</option>
+                </select>
+                <br>Max Number:<br>
+                <input type="number" id="number" placeholder="最大查询数量">
+            </div>
+            <button type="button" id="search" class="btn btn-default">搜索</button>
+            <button type="button" id="chart" class="btn btn-default">热度分析</button>
+        </form>
+    </div>
+    
+    
+    <div class="container">
+        <table id="example" class="table table-striped table-condensed" style="width:100%">
+            
+        </table>
+    </div>
+    <div id="main"></div>
+    <script>
+        $(document).ready(function() {
+        $('button[id="search"]').click(function() {
+            $.get('/process_get?keyword='+$('input:text').val()+","+item, function(data){
+                $('table').empty();
+                
+                $("table").append('<tbody>');
+                $("table").append('<tr class="news table-light"><th>新闻标题</th><th>作者</th><th>来源</th><th>时间</th><th>原文网址<a>        </a></th></tr>');
+                let cnt0 = 0;
+                
+                for (let list of data) {
+                    let cnt1 = 0;
+                    let table = '<tr class="news table-hover"><td>';
+                    for(let element of Object.values(list)){
+                        if(cnt1 <= 1){
+                            table += (element + '</td><td>');
+                        } else if(cnt1 === 2){
+                            table += (element.replace(/[\s]/g, "") + '</td><td>');
+                        } else if(cnt1 === 3){
+                            table += (element.replace('T'," ").replace(".000Z","") + '</td><td>');
+                        } else {
+                            table += (`<a href="${element}">查看原文</a></td><td>`);
+                        }
+                        cnt1++;
+                    }
+                   
+                    $("table").append(table + '</td></tr>');
+                    cnt0++;
+                    if($('input[type="number"]').val() > 0){
+                        if(cnt0 >= $('input[type="number"]').val()) break;
+                    }
+                }
+                $("table").append('</tbody>')
+
+                
+            });
+        });
+    });  
+    </script>
+    <script>  
+        $(document).ready(function() {
+        $('button[id="chart"]').click(function() {
+            $.get('/chart?keyword='+$('input:text').val()+","+item, function(data){
+                $('table').empty();
+                var chart = echarts.init(document.getElementById('main'));
+                var x_axis = [];
+                var y_axis = [];
+                for(let list of data){
+                    x_axis.push(list.date);
+                    y_axis.push(list.num);
+                }
+                var option = {
+                    title:{
+                        text: `'${$('input:text').val()}' 热点图`,
+                        x: 'center',
+                        textStyle:{
+                            fontSize: 24
+                        }
+                    },
+                    xAxis:{
+                        type:'category',
+                        data:x_axis
+                    },
+                    yAxis:{
+                        type:'value'
+                    },
+                    series:[
+                        {
+                            type:'line',
+                            data:y_axis
+                        }
+                    ]
+                }
+                chart.setOption(option);
+            });
+        });
+    });  
+    </script>
+    <script>
+        var item;
+        $("select").on('change', function () {
+        if ($(this).val() != -1) {
+            item = $(this).val();
+        }
+    })
+    </script>
+    
+
+    
+
+    
+</body>
+</html>
