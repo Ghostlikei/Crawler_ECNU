@@ -1,8 +1,3 @@
-/* 此爬虫为ScienceNews新闻爬虫，新闻版权归原网站所有，不用于盈利和商业目的，是为了期末大作业编写 */
-const axios = require('axios').default;
-const cheerio = require('cheerio');
-const fs = require('fs');
-
 const config = {
     timeout: 30000,
     headers:{
@@ -11,14 +6,7 @@ const config = {
 };
 
 var mysql = require('mysql');
-var connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'pwd',
-    port: '3306',
-    database: 'science_news'
-})
-
+var connection = mysql.createConnection()//连接到数据库
 connection.connect();
 
 async function getNewsHtml(listUrl){
@@ -29,14 +17,13 @@ async function getNewsHtml(listUrl){
     catch(err){
         fs.writeFileSync("./error_log.txt",`${err}, ${listUrl}\n`,{flag:"a+"});
     }
-    
 }
 
 async function getNewsLinks(listUrl){
     try{
         const html = await getNewsHtml(listUrl);
         const $ = cheerio.load(html);
-        let anchor = $("div ol li div h3 a");
+        let anchor = $("div ol li div h3 a");//解析爬取的链接
         
         const links = anchor.map((i, ele) => {
             const href = ele.attribs["href"];
@@ -56,19 +43,7 @@ async function getData(newsUrl){
         let SUCCESS = true;
         const resp = await axios.get(newsUrl, config);
         const $ = cheerio.load(resp.data);
-        let title = $('header div div h1').text();
-        let author = $('div div div div p span a').text();
-        let time = $('div div div div p time').attr('datetime').slice(0,19).replace("T"," ");
-        let source = "sciencenews.org";
-        let article = $('main div div div[class~="rich-text"] p').text();
-        let url = newsUrl;
-
-        let essay = $('div div footer div p').text();
-
-        console.log(`Getting Data: ${newsUrl}`);
-
-        
-        
+        //此处省略解析数据部分
         let sql = `INSERT INTO sciencenews VALUES("${title}", "${author}", "${source}", "${time}", "${article}", "${url}", "${essay}");`;
         connection.query(sql, (err, result) =>{
             if(err){
@@ -76,25 +51,13 @@ async function getData(newsUrl){
                 fs.writeFileSync("./error_log.txt",`${err}, ${newsUrl}\n`,{flag:"a+"});
                 return;
             }
-        })
-
+        })//存储数据
         if(SUCCESS) fs.writeFileSync("./crawl_log.txt",`Getting data successfully:\nurl: ${url}\n`,{flag:"a+"});
-
-        return {
-            title: title,
-            author: author,
-            source: source,
-            upload_time: time,
-            article: article,
-            html: url,
-            essay: essay
-        };
-
+        return {};//返回数据的json
     }
     catch(err){
         fs.writeFileSync("./error_log.txt",`${err}, ${newsUrl}\n`,{flag:"a+"});
     }
-    
 }
 
 async function fetchAll(listUrl){
@@ -121,14 +84,16 @@ const sleep = (timeout) => {
 }
 
 let start_page = 1;
-let number = 10;
+let end_page = 100;
+let wait = 25000;// 设置睡眠时间，防止io过大
+let number = 10;//一次爬取的条目页数，单次开启的线程数量=number*单页连接数
 async function main(){
     for(let j = 1; j <= 1000; j++){
         for(let i = start_page; i < start_page+number; i++){
             fetchAll(`https://www.sciencenews.org/topic/tech/page/${i}`);   
         }
-        await sleep(25000);
-        if(start_page >= 100){
+        await sleep(wait);
+        if(start_page-number >= end_page){
             console.log("抓取结束！");
             connection.end();
             return;

@@ -2,7 +2,7 @@ var mysql = require("mysql");
 var pool = mysql.createPool({
     host: 'localhost',
     user: 'root',
-    password: 'stl030926',
+    password: 'pwd',
     database: 'science_news',
     connecTimeout:500,    //超时
     connectionLimit:100   //最大连接数

@@ -16,7 +16,7 @@ var mysql = require('mysql');
 var connection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
-    password: 'stl030926',
+    password: 'pwd',
     port: '3306',
     database: 'science_news'
 })
@@ -31,7 +31,6 @@ async function getNewsHtml(listUrl){
     catch(err){
         fs.writeFileSync("./error_log.txt",`${err}, ${listUrl}\n`,{flag:"a+"});
     }
-    
 }
 
 async function getNewsLinks(listUrl){
